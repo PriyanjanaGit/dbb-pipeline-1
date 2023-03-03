@@ -5,7 +5,7 @@
 // Agent labels
 echo 'cics-genapp Jenkinsfile pipeline started'
 //def zOsAgentLabel = env.ZOS_AGENT_LABEL ? env.ZOS_AGENT_LABEL : 'zosAgent'
-def zOsAgentLabel = env.ZOS_AGENT_LABEL ? env.ZOS_AGENT_LABEL : 'e2e-pipeline'
+def zOsAgentLabel = env.ZOS_AGENT_LABEL ? env.ZOS_AGENT_LABEL : 'DBB20_zOS-Agent'
 def linuxAgent = 'master'
 
 // GIT repositories
@@ -18,8 +18,8 @@ def linuxAgent = 'master'
 def srcGitRepo = 'https://github.com/PriyanjanaGit/dbb-pipeline-1.git'
 def srcGitBranch = 'master'
 def zAppBuildGitRepo = 'https://github.com/PriyanjanaGit/dbb-zappbuild.git'
-def zAppBuildGitBranch = 'develop'
-def dbbGitRepo = 'https://github.com/PriyanjanaGit/dbb-chg.git'
+def zAppBuildGitBranch = 'main'
+def dbbGitRepo = 'https://github.com/PriyanjanaGit/dbb.git'
 def dbbGitBranch = 'master'
 echo 'cics-genapp Jenkinsfile pipeline DBB'
 // DBB
@@ -29,12 +29,13 @@ def dbbUrl='https://mvpserver1.fyre.ibm.com:9443/dbb'
 //def dbbHlq='RLAM'
 def dbbHlq='PROY'
 def dbbBuildType='-i'
-def dbbGroovyzOpts= '-Dlog4j.configurationFile=/var/dbb/conf/log4j2.properties'
+def dbbGroovyzOpts= '-Dorg.slf4j.simpleLogger -cp /u/user3/logging'
+//def dbbGroovyzOpts= '-Dlog4j.configurationFile=/var/dbb/conf/log4j2.properties'
 // def dbbGroovyzOpts= '-DBB_PERSONAL_DAEMON -Dlog4j.configurationFile=/var/dbb/conf/log4j2.properties'
 // def dbbGroovyzOpts= '-Dlog4j.configurationFile=/var/dbb/conf/log4j2.properties -Djavax.net.debug=ssl,handshake:verbose -Djdk.tls.client.protocols=TLSv1.2 -Dcom.ibm.jsse2.overrideDefaultTLS=true -Dcom.ibm.jsse2.overrideDefaultProtocol=TLSv1.2 '
 //def dbbBuildExtraOpts= '-zTest'
 def dbbBuildExtraOpts= ''
-def dbbCredentialOptions='-id ADMIN -pw ADMIN'
+def dbbCredentialOptions='-id ADMIN -pw ADMIN --url jdbc:db2://tvt7111.svl.ibm.com:5050/DBC1 '
 
 echo 'cics-genapp Jenkinsfile pipeline Artifactory'
 // Artifactory
@@ -54,7 +55,7 @@ def ucdProcess = 'Proy_Deploy_App_Bind_CICS_WEB_Proc'
 def ucdComponent = 'IBMDemo'
 def ucdEnv = 'Dev'
 def ucdSite = 'Jenkins2UCDServer'
-def ucdBuztool = '/var/ucd/v71/bin/buztool.sh'
+def ucdBuztool = '/var/ucd/v73/bin/buztool.sh'
 // Verbose
 def verbose = true
 
@@ -98,7 +99,7 @@ pipeline {
         ARTIFACTORY_URL='https://na.artifactory.swg-devops.com/artifactory'
 //        ARTIFACTORY_REPO_PATH='hyc-mvp-team-maven-local/MVPGenapp'
         ARTIFACTORY_REPO_PATH='hyc-mvp-team-maven-local/PriyaGenapp'
-        UCD_BUZTOOL_PATH='/var/ucd/v71/bin/buztool.sh'
+        UCD_BUZTOOL_PATH='/var/ucd/v73/bin/buztool.sh'
         UCD_HOME='/var/ucd/v73'
         _BPX_JOBNAME = 'JENJOB'
      //  GROOVYZ_BUILD_EXTRA_OPTS='-DBB_PERSONAL_DAEMON'
@@ -168,7 +169,7 @@ echo 'cics-genapp Jenkinsfile pipeline dir -> cics-genapp '
                             ]]])
                     }
 
-                    dir("dbb-chg") {
+                    dir("dbb") {
                         sh(script: 'rm -f .git/info/sparse-checkout', returnStdout: true)
                         def scmVars =
                             checkout([$class: 'GitSCM', branches: [[name: dbbGitBranch]],
@@ -279,7 +280,7 @@ echo 'cics-genapp Jenkinsfile pipeline dir -> cics-genapp '
                         def crContent = null
                         node( zOsAgentLabel ) {
                             BUILD_OUTPUT_FOLDER = sh (script: "ls ${WORKSPACE}/BUILD-${BUILD_NUMBER}  | grep build | sort -u", returnStdout: true).trim()
-                            sh "$DBB_HOME/bin/groovyz $dbbGroovyzOpts ${WORKSPACE}/dbb-chg/Pipeline/RunIDZCodeReview/RunCodeReview.groovy --workDir ${WORKSPACE}/BUILD-${BUILD_NUMBER}/${BUILD_OUTPUT_FOLDER} -cr  ${WORKSPACE}/cics-genapp/cics-genapp/cr-rules/CodeReviewRules.dat -ccr  ${WORKSPACE}/cics-genapp/cics-genapp/cr-rules/CodeReviewRules.ccr"
+                            sh "$DBB_HOME/bin/groovyz $dbbGroovyzOpts ${WORKSPACE}/dbb/Pipeline/RunIDZCodeReview/RunCodeReview.groovy --workDir ${WORKSPACE}/BUILD-${BUILD_NUMBER}/${BUILD_OUTPUT_FOLDER} -cr  ${WORKSPACE}/cics-genapp/cics-genapp/cr-rules/CodeReviewRules.dat -ccr  ${WORKSPACE}/cics-genapp/cics-genapp/cr-rules/CodeReviewRules.ccr"
                             dir ("${WORKSPACE}/BUILD-${BUILD_NUMBER}/${BUILD_OUTPUT_FOLDER}") {
                                 def crJunitFile = fileExists "CodeReviewJUNIT.xml"
                                 if ( crJunitFile ) {
@@ -323,7 +324,8 @@ EXTREPO.url=${artiUrl}
                                 echo " Start dbb-ucd-packaging.groovy "
  // password not encrypted, use my own
                          //       sh "cp $HOME/Jenkins-Cloud/workspace/artifactory.properties ${WORKSPACE}/BUILD-${BUILD_NUMBER}/artifactoy.properties"
-                                sh "$dbbHome/bin/groovyz $dbbGroovyzOpts ${WORKSPACE}/dbb-chg/Pipeline/CreateUCDComponentVersion/dbb-ucd-packaging.groovy --buztool ${ucdBuztool} --component ${ucdComponent} --workDir ${WORKSPACE}/BUILD-${BUILD_NUMBER}/${BUILD_OUTPUT_FOLDER} -prop ${WORKSPACE}/BUILD-${BUILD_NUMBER}/artifactoy.properties"
+                                  sh "$dbbHome/bin/groovyz $dbbGroovyzOpts ${WORKSPACE}/dbb/Pipeline/CreateUCDComponentVersion/dbb-ucd-packaging.groovy --buztool ${ucdBuztool} --component ${ucdComponent} --workDir ${WORKSPACE}/BUILD-${BUILD_NUMBER}/${BUILD_OUTPUT_FOLDER} -prop ${WORKSPACE}/BUILD-${BUILD_NUMBER}/artifactoy.properties"
+                         //       sh "$dbbHome/bin/groovyz $dbbGroovyzOpts ${WORKSPACE}/dbb-chg/Pipeline/CreateUCDComponentVersion/dbb-ucd-packaging.groovy --buztool ${ucdBuztool} --component ${ucdComponent} --workDir ${WORKSPACE}/BUILD-${BUILD_NUMBER}/${BUILD_OUTPUT_FOLDER} -prop ${WORKSPACE}/BUILD-${BUILD_NUMBER}/artifactoy.properties"
                             }
                         }
                     }
