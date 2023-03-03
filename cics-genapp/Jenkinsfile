@@ -5,7 +5,7 @@
 // Agent labels
 echo 'cics-genapp Jenkinsfile pipeline started'
 //def zOsAgentLabel = env.ZOS_AGENT_LABEL ? env.ZOS_AGENT_LABEL : 'zosAgent'
-def zOsAgentLabel = env.ZOS_AGENT_LABEL ? env.ZOS_AGENT_LABEL : 'DBB20_zOS-Agent'
+def zOsAgentLabel = env.ZOS_AGENT_LABEL ? env.ZOS_AGENT_LABEL : 'e2e-pipeline'
 def linuxAgent = 'master'
 
 // GIT repositories
@@ -20,7 +20,7 @@ def srcGitBranch = 'master'
 def zAppBuildGitRepo = 'https://github.com/PriyanjanaGit/dbb-zappbuild.git'
 def zAppBuildGitBranch = 'main'
 def dbbGitRepo = 'https://github.com/PriyanjanaGit/dbb.git'
-def dbbGitBranch = 'master'
+def dbbGitBranch = 'main'
 echo 'cics-genapp Jenkinsfile pipeline DBB'
 // DBB
 def dbbHome='/var/dbb'
@@ -28,7 +28,7 @@ def dbbHome='/var/dbb'
 def dbbUrl='https://mvpserver1.fyre.ibm.com:9443/dbb'
 //def dbbHlq='RLAM'
 def dbbHlq='PROY'
-def dbbBuildType='-i'
+def dbbBuildType='-f'
 def dbbGroovyzOpts= '-Dorg.slf4j.simpleLogger -cp /u/user3/logging'
 //def dbbGroovyzOpts= '-Dlog4j.configurationFile=/var/dbb/conf/log4j2.properties'
 // def dbbGroovyzOpts= '-DBB_PERSONAL_DAEMON -Dlog4j.configurationFile=/var/dbb/conf/log4j2.properties'
